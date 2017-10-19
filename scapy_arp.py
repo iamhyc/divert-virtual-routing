@@ -6,9 +6,7 @@ import json
 subip = {}
 
 def arp_response(pkt):
-	if pkt.op==2 and pkt.psrc=="192.168.1.1":
-		print("ARP Response From Gateway.")
-	elif pkt.op==1 and subip.has_key(pkt.pdst):
+	if subip.has_key(pkt.pdst):
 		localMAC = get_if_hwaddr(conf.iface)
 
 		arp = (
@@ -35,4 +33,4 @@ if __name__ == '__main__':
 	print("Running over "), 
 	print(conf.iface), 
 	print("...")
-	sniff(filter="arp", prn=arp_response)
+	sniff(filter="arp and arp[7] = 1", prn=arp_response)
