@@ -32,5 +32,7 @@ if __name__ == '__main__':
 	with open('./subip_list.json') as json_file:
 		subip = json.load(json_file)
 
-	print("Running over " + conf.iface + " ...")
+	print("Running over "), 
+	print(conf.iface), 
+	print("...")
 	sniff(filter="arp", prn=arp_response)
