@@ -78,13 +78,47 @@ if __name__ == '__main__':
 	global skt, thread_map
 	main()
 
+null_ip = "0.0.0.0"
+bc_ip = "255.255.255.255"
+bc_mac = "ff:ff:ff:ff:ff:ff"
+bootp_xid = random.randint(0, sys.maxint)
+
 '''
-dhcp_discover=(
-	Ether(dst="ff:ff:ff:ff:ff:ff")/
-	IP(src="0.0.0.0",dst="255.255.255.255")/
-	UDP(sport=68,dport=67)/
-	BOOTP(chaddr=hw)/
-	DHCP(options=[("message-type","discover"),"end"]
-	)
-ans,unans=srp(dhcp_discover,multi=True)# Press CTRL-C after several seconds
+DHCP Discover Packet
 '''
+l2 = Ether(dst=bc_mac, src=proxy_mac, type=0x0800)
+l3 = IP(src=null_ip, dst=bc_ip)
+udp =  UDP(dport=67, sport=68)
+bootp = BOOTP(op=1, xid=bootp_xid)
+dhcp = DHCP(options=[('message-type','discover'), 
+					 ('end')])
+packet = l2/l3/udp/bootp/dhcp
+
+'''
+DHCP Offer Packet
+'''
+if req.haslayer(BOOTP):
+	bootp = req.getlayer(BOOTP)
+	if bootp.xid == self.__xid:
+		if req.haslayer(DHCP) and self.__ip is None:
+			print "Dhcp packet!"
+			dhcp = req.getlayer(DHCP)
+			if dhcp.options[0][0] == 'message-type':
+				message_type = dhcp.options[0][1]
+				# Only interested in offers
+				if message_type == 2:
+					return 1
+
+'''
+DHCP Request Packet
+'''
+l3 = Ether(dst=req.getlayer(Ether).src, src=self.__mac)
+l2 = IP(src=self.__ip, dst=req.getlayer(IP).src)
+udp = UDP(sport=req.dport, dport=req.sport)
+bootp = BOOTP(op=1, chaddr=self.__mac, xid=self.__xid)
+dhcp = DHCP(options=[('message-type','request'),
+					 ('client_id', self.__mac),
+					 ('requested_addr', self.__ip),
+					 ('server_id', self.__router),
+					 ('end')])
+rep=l3/l2/udp/bootp/dhcp
