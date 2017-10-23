@@ -2,11 +2,11 @@
 from scapy.all import *
 from time import sleep
 import multiprocessing
-import socket
+import socket, string, binascii
 
 global udp_rx_setup, udp_tx_setup
 global null_ip, bc_ip, bc_mac, lo_mac
-global dhcp_bc_header
+global dhcp_bc_header, dhcp_param_tuple
 global skt, proc_map, ops_map
 
 UDP_BASE_BOOTP_HEADER = 8
@@ -47,10 +47,12 @@ class DHCP_Proxy(multiprocessing.Process):
 		self.param = {
 			'__filled__' : 0,
 			'__acked__' : 0,
+			'hostname' : ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(8)), 
 			'ip' : bc_ip,
 			'mac' : RandMAC("00:28:f8:7c"),#allocate a pseudo mac address
 			'gateway' : bc_ip,
-			'mask' : bc_ip
+			'mask' : bc_ip,
+			'xid' : random.randint(1, 900000000)
 		}
 		self.state = 1
 		pass
@@ -74,35 +76,36 @@ class DHCP_Proxy(multiprocessing.Process):
 		pass
 
 	def dhcp_request(self):
-		xid_tmp = random.randint(1, 900000000)
 		mac_str = mac2str(self.param["mac"])
 		request_pkt = (
 			dhcp_bc_header/ \
-			BOOTP(op=1, chaddr=mac_str, xid=xid_tmp)/ \
+			BOOTP(chaddr=mac_str, xid=self.param['xid'], flags=0x0000)/ \
         	DHCP(options=[('message-type','request'),
-        				  ('client_id', mac_str),
-        				  ('requested_addr', self.param["ip"]),
+        				  #('client_id', mac_str),
         				  ('server_id', self.param["gateway"]),
+        				  ('requested_addr', self.param["ip"]),
+        				  ("hostname", self.param["hostname"]),
+        				  ("param_req_list",)+dhcp_param_tuple,
         				  ('end')])
 		)
-		set_filter = ('udp and udp[%d:%d]=%d'%(12, 4, xid_tmp))
+		set_filter = ('udp and udp[%d:%d]=%d'%(12, 4, self.param['xid']))
 
 		sendp(request_pkt, iface=conf.iface)
 		sniff(iface=conf.iface, \
 			  filter=set_filter, \
 			  count=1, timeout=5, \
 			  prn=self.dhcp_ack_parse)
+		sleep(5)#DELETE THIS!
 		pass
 
 	def dhcp_discover(self):
-		xid_tmp = random.randint(1, 900000000)
 		discover_pkt = (
 			dhcp_bc_header/ \
-			BOOTP(chaddr=[mac2str(self.param["mac"])], xid=xid_tmp, flags=0xFFFFFF)/ \
+			BOOTP(chaddr=[mac2str(self.param["mac"])], xid=self.param['xid'], flags=0xFFFF)/ \
 			DHCP(options=[('message-type','discover'), 
 				  ('end')])
 		)
-		set_filter = ('udp and udp[%d:%d]=%d'%(12, 4, xid_tmp))
+		set_filter = ('udp and udp[%d:%d]=%d'%(12, 4, self.param['xid']))
 
 		sendp(discover_pkt, iface=conf.iface)
 		sniff(iface=conf.iface, \
@@ -128,6 +131,7 @@ def request(task_id, skt_lock):
 		raise Exception
 
 	proc_map[task_id] = DHCP_Proxy(task_id, skt_lock)
+	proc_map[task_id].daemon = True
 	proc_map[task_id].start()
 	pass
 
@@ -172,6 +176,11 @@ if __name__ == '__main__':
 		Ether(src=lo_mac,dst="ff:ff:ff:ff:ff:ff")/ \
 		IP(src="0.0.0.0",dst="255.255.255.255")/ \
 		UDP(sport=68,dport=67)
+	)
+	dhcp_param_tuple = (
+		chr(1), chr(28), chr(2), chr(3), chr(15), chr(6), \
+		chr(119), chr(12), chr(44), chr(47), chr(26), \
+		chr(121), chr(42)
 	)
 
 	udp_tx_setup = ('localhost', 11111)
