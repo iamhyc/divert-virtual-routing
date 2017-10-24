@@ -79,13 +79,13 @@ class DHCP_Proxy(multiprocessing.Process):
 		mac_str = mac2str(self.param["mac"])
 		request_pkt = (
 			dhcp_bc_header/ \
-			BOOTP(chaddr=mac_str, xid=self.param['xid'], flags=0x0000)/ \
+			BOOTP(chaddr=mac_str, giaddr=null_ip, xid=self.param['xid'], hops=1, flags=0x0000)/ \
         	DHCP(options=[('message-type','request'),
         				  #('client_id', mac_str),
         				  ('server_id', self.param["gateway"]),
         				  ('requested_addr', self.param["ip"]),
         				  ("hostname", self.param["hostname"]),
-        				  ("param_req_list",)+dhcp_param_tuple,
+        				  ("param_req_list", "pad"),
         				  ('end')])
 		)
 		set_filter = ('udp and udp[%d:%d]=%d'%(12, 4, self.param['xid']))
@@ -99,11 +99,12 @@ class DHCP_Proxy(multiprocessing.Process):
 		pass
 
 	def dhcp_discover(self):
+		mac_str = mac2str(self.param["mac"])
 		discover_pkt = (
 			dhcp_bc_header/ \
-			BOOTP(chaddr=[mac2str(self.param["mac"])], xid=self.param['xid'], flags=0xFFFF)/ \
+			BOOTP(chaddr=[mac_str], giaddr=null_ip, xid=self.param['xid'], hops=1, flags=0x0000)/ \
 			DHCP(options=[('message-type','discover'), 
-				  ('end')])
+				  		  ('end')])
 		)
 		set_filter = ('udp and udp[%d:%d]=%d'%(12, 4, self.param['xid']))
 
@@ -168,13 +169,13 @@ def main():
 
 if __name__ == '__main__':
 	print("Network Interface Initializing, please wait...")
-	null_ip = "0.0.0.0"
-	bc_ip = "255.255.255.255"
-	bc_mac = "ff:ff:ff:ff:ff:ff"
+	null_ip = get_if_addr(conf.iface)#"0.0.0.0"
+	bc_ip = "192.168.1.1" #"255.255.255.255"
+	bc_mac = "b0:95:8e:25:88:05"#"ff:ff:ff:ff:ff:ff"
 	lo_mac = get_if_hwaddr(conf.iface)
 	dhcp_bc_header = (
 		Ether(src=lo_mac,dst="ff:ff:ff:ff:ff:ff")/ \
-		IP(src="0.0.0.0",dst="255.255.255.255")/ \
+		IP(src=null_ip,dst=bc_ip)/ \
 		UDP(sport=68,dport=67)
 	)
 	dhcp_param_tuple = (
