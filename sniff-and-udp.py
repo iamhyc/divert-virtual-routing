@@ -9,7 +9,7 @@ from Utility import *
 from scapy.all import *
 
 def sniff_hook(x):
-	global count, length, pkt_q
+	global pkt_q
 	if x.haslayer(IP):
 		packet = x.getlayer(IP)
 		pkt_q.put(packet)
@@ -26,8 +26,21 @@ def runThread(pkt_q):
 				skt.sendto(str(frag), ('', 12345))
 				count += 1
 				length += len(frag)
-				print("%d\t%.2f MB"%(count, length/1E6))
+				remains = pkt_q.qsize()
+				print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
 				pass
+			pass
+		pass
+	pass
+
+def main():
+	global flt_ctrl
+	#sniff(iface=conf.iface, filter="not dst port 11112", prn=sniff_hook)
+	s = conf.L2socket(type=ETH_P_ALL, iface=conf.iface)
+	while True:
+		p = s.recv()
+		if p is not None:
+			sniff_hook(p)
 			pass
 		pass
 	pass
@@ -51,8 +64,10 @@ def init():
 	pass
 
 if __name__ == '__main__':
-	global flt_ctrl
-
 	init()
 	print(conf.iface)
-	sniff(iface=conf.iface, filter=flt_ctrl, prn=sniff_hook)
+	try:
+		main()
+	except Exception as e:
+		raise e
+		pass
