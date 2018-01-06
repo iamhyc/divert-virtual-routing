@@ -6,7 +6,7 @@ UPD and sendp.py
 '''
 import socket, threading, Queue
 from Utility import *
-import pydivert
+import pydivert, ifaddr
 
 global w
 
@@ -45,12 +45,15 @@ def main():
 	pass
 
 def init():
-	global count, skt, length, pkt_q, w
+	global count, skt, length, pkt_q, iface_t, w
 	count = 0
 	length = 0
 
 	w = pydivert.WinDivert(filter="false")
 	w.open()
+
+	config = load_json('./config.json')
+	iface_t = get_iface(config['send_iface'])
 
 	skt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	skt.bind(('', 12345))
@@ -66,5 +69,5 @@ if __name__ == '__main__':
 	try:
 		main()
 	except Exception as e:
-		print e
+		printh("SendMain", e, 'red')
 		w.exit()

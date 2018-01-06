@@ -1,4 +1,7 @@
 {
+	"cap_iface":"I219-V",
+	"send_iface":"I219-V",
+	
 	"src_host":"192.168.1.100",
 	"dst_host":[
 		"192.168.1.220",

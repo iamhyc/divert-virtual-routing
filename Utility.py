@@ -4,7 +4,7 @@ Utility: useful general function utilities
 @author: Mark Hong
 @level: debug
 '''
-import json, threading, greenlet
+import json, threading, greenlet, ifaddr
 from termcolor import colored, cprint
 
 def load_json(uri):
@@ -23,6 +23,17 @@ def printh(tip, cmd, color=None, split=' '):
 		)
 	pass
 
+def get_iface(target):
+	adapters = ifaddr.get_adapters()
+
+	for adapter in adapters:
+		if target in adapter.nice_name:
+			tmp_tuple = adapter.ips[0].ip
+			iface_tuple = (tmp_tuple[2], tmp_tuple[1])
+			return iface_tuple
+		pass
+	return (0L, 0L)
+	pass
 
 #next rewrite with greenlet, factory and collection
 def exec_watch(process, hook=None, fatal=False, gen=True):
