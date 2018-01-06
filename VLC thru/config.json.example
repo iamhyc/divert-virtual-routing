@@ -1,6 +1,6 @@
 {
-	"cap_iface":"I219-V",
-	"send_iface":"I219-V",
+	"cap_iface":"Ethernet Connection",
+	"send_iface":"Wireless LAN",
 	
 	"src_host":"192.168.1.100",
 	"dst_host":[

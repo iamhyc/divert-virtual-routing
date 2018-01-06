@@ -34,7 +34,7 @@ def main():
 	w.open()
 	while True:
 		packet = w.recv(bufsize=1500)
-		w.send(packet)
+		#w.send(packet)
 		pkt_q.put(packet.raw)
 		pass
 	pass
