@@ -6,42 +6,35 @@ Sniff and UDP.py
 '''
 import socket, Queue, threading
 from Utility import *
-from scapy.all import *
+import pydivert
 
-def sniff_hook(x):
-	global pkt_q
-	if x.haslayer(IP):
-		packet = x.getlayer(IP)
-		pkt_q.put(packet)
-		pass
-	pass
+global w
 
 def runThread(pkt_q):
 	global count, length
 	while True:
 		if not pkt_q.empty():
-			packet = pkt_q.get()
-			fragments = fragment(packet, fragsize=1024)
-			for frag in fragments:
-				skt.sendto(str(frag), ('', 12345))
-				count += 1
-				length += len(frag)
-				remains = pkt_q.qsize()
-				print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
-				pass
+			raw = pkt_q.get()
+			packet = str(bytearray(raw))
+			#print("%d\t%s"%(len(packet), packet))
+			skt.sendto(packet, ('localhost', 12345))
+
+			count += 1
+			length += len(packet)
+			remains = pkt_q.qsize()
+			print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
 			pass
 		pass
 	pass
 
 def main():
-	global flt_ctrl
-	#sniff(iface=conf.iface, filter="not dst port 11112", prn=sniff_hook)
-	s = conf.L2socket(type=ETH_P_ALL, iface=conf.iface)
+	global flt_ctrl, w
+	w = pydivert.WinDivert("inbound and not tcp.DstPort == 11112")
+	w.open()
 	while True:
-		p = s.recv()
-		if p is not None:
-			sniff_hook(p)
-			pass
+		packet = w.recv(bufsize=1500)
+		w.send(packet)
+		pkt_q.put(packet.raw)
 		pass
 	pass
 
@@ -65,9 +58,9 @@ def init():
 
 if __name__ == '__main__':
 	init()
-	print(conf.iface)
 	try:
 		main()
 	except Exception as e:
-		raise e
+		print(e) #for debug
+		w.close()
 		pass
