@@ -32,8 +32,9 @@ def main():
 			count += 1
 			##packet creation
 			v = memoryview(bytearray(data))
-			packet = pydivert.Packet(v, (12L, 0L),
-				pydivert.Direction(1) #0 for OUT_BOUND
+			packet = pydivert.Packet(v, 
+				(12L, 0L), #Network Interface index & subindex
+				pydivert.Direction(0) #0 for OUT_BOUND
 			)
 			##packet manipulation
 			packet.dst_port = 11112

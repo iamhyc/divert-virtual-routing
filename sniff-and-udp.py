@@ -9,6 +9,8 @@ from Utility import *
 import pydivert
 
 global w
+test_ctrl = ""
+# test_ctrl = "not tcp.DstPort==11112"
 
 def runThread(pkt_q):
 	global count, length
@@ -29,7 +31,7 @@ def runThread(pkt_q):
 
 def main():
 	global flt_ctrl, w
-	w = pydivert.WinDivert("inbound and not tcp.DstPort == 11112")
+	w = pydivert.WinDivert(flt_ctrl)
 	w.open()
 	while True:
 		packet = w.recv(bufsize=1500)
@@ -45,9 +47,13 @@ def init():
 
 	#init parameter from json
 	config = load_json('./config.json')
-	src_ctrl = "src host %s"%(config["src_host"])
-	dst_ctrl = "dst host %s"%(' '.join(config["dst_host"]))
-	flt_ctrl = '%s %s'%(src_ctrl, dst_ctrl)
+	src_ctrl = "ip.SrcAddr==%s"%(config["src_host"])
+	dst_ctrl = "ip.DstAddr>=%s and ip.DstAddr<=%s"%(config["dst_host"][0], config["dst_host"][-1])
+	if test_ctrl:
+		flt_ctrl = 'inbound and %s and %s or %s'%(src_ctrl, dst_ctrl, test_ctrl)
+	else:
+		flt_ctrl = 'inbound and %s and %s'%(src_ctrl, dst_ctrl)
+		pass
 	# socket & thread init
 	skt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	pkt_q = Queue.Queue()
