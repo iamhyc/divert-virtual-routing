@@ -23,7 +23,7 @@ def runThread(pkt_q):
 	pass
 
 def main():
-	global count, length, pkt_q
+	global count, length, pkt_q, iface_t
 	while True:
 		try:
 			##raw data from socket
@@ -33,11 +33,11 @@ def main():
 			##packet creation
 			v = memoryview(bytearray(data))
 			packet = pydivert.Packet(v, 
-				(12L, 0L), #Network Interface index & subindex
+				iface_t, #Network Interface index & subindex
 				pydivert.Direction(0) #0 for OUT_BOUND
 			)
 			##packet manipulation
-			packet.dst_port = 11112
+			#packet.dst_port = 11112 #for test
 			pkt_q.put(packet)
 		except Exception as e:
 			pass#try(skt)

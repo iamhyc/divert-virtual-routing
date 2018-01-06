@@ -9,7 +9,7 @@ from Utility import *
 import pydivert
 
 global w
-DBG = 1
+DBG = 0
 
 def runThread(pkt_q):
 	global count, length
