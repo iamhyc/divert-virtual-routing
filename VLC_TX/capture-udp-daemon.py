@@ -4,7 +4,7 @@ Sniff and UDP.py
 @author: Mark Hong
 @level: debug
 '''
-import socket, Queue, threading
+import socket, time, Queue, threading
 from Utility import *
 import pydivert
 
@@ -14,6 +14,7 @@ DBG = 1
 def updateThread():
 	global subnet_map
 	while True:
+		time.sleep(1.0)
 		try:
 			tmp = load_json('./subnet-mapping.json')
 			config = tmp #atom
@@ -29,7 +30,7 @@ def packet_wrapper(packet):
 	fraw = str(bytearray(packet.raw))
 	fid = ''
 
-	tmp = subnet_map
+	tmp = subnet_map #atom
 	for k,v in tmp.items():
 		if ipAddr in v['subnet']:
 			fid = k
