@@ -3,12 +3,8 @@
 from scapy.all import *
 import json
 
-subip = {}
-
 def arp_response(pkt):
-	if subip.has_key(pkt.pdst):
-		localMAC = get_if_hwaddr(conf.iface)
-
+	if subnet_l.has_key(pkt.pdst):
 		arp = (
 			Ether(src=localMAC, dst=pkt.hwsrc)/
 			ARP(
@@ -25,12 +21,13 @@ def arp_response(pkt):
 		print(arp.pdst + " spoofed when calling " + arp.psrc)
 	pass
 
+def init():
+	global subnet_l, localMAC
+	subnet_l = load_json("./SubnetList.json")
+	localMAC = get_if_hwaddr(conf.iface)
+	pass
 
 if __name__ == '__main__':
-	with open('./subip_list.json') as json_file:
-		subip = json.load(json_file)
-
-	print("Running over "), 
-	print(conf.iface), 
-	print("...")
+	init()
+	print("Running over %s ..."%(str(conf.iface)))
 	sniff(filter="arp and arp[7] = 1", prn=arp_response)

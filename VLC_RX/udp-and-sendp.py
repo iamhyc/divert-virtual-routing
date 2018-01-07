@@ -34,7 +34,7 @@ def main():
 			v = memoryview(bytearray(data))
 			packet = pydivert.Packet(v, 
 				iface_t, #Network Interface index & subindex
-				pydivert.Direction(0) #0 for OUT_BOUND
+				pydivert.Direction(1) #0 for OUT_BOUND
 				#1 for INBOUND to perform loopback (P.S. insert after inception)
 			)
 			##packet manipulation
@@ -68,6 +68,7 @@ def init():
 if __name__ == '__main__':
 	init()
 	try:
+		printh("SendMain", "Now on %s"%(str(iface_t)), "green")
 		main()
 	except Exception as e:
 		printh("SendMain", e, 'red')
