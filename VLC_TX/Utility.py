@@ -4,7 +4,8 @@ Utility: useful general function utilities
 @author: Mark Hong
 @level: debug
 '''
-import json, threading, greenlet, ifaddr
+import ctypes, struct, json
+import threading, greenlet, ifaddr
 from termcolor import colored, cprint
 
 def load_json(uri):
@@ -57,4 +58,24 @@ def join_helper(t_tuple):
 			raise e
 		pass
 	pass
+
+class StructHelper(object):
+	"""docstring for StructHelper"""
+	def __init__(self, frame_s):
+		super(StructHelper, self).__init__()
+		self.frame = struct.Struct(frame_s) #e.g. "IBB"
+		self.cbuffer = ctypes.create_string_buffer(self.frame.size)
+		pass
 	
+	def genPacket(self, head_t, raw):
+		if not isinstance(head_t, tuple):
+			return ""
+
+		self.frame.pack_into(
+			self.cbuffer, 0, head_t)
+		header = ctypes.string_at(
+			ctypes.addressof(self.cbuffer),
+			self.frame.size)
+
+		return (header + raw)
+		pass

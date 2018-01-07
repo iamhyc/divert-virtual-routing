@@ -1,10 +1,5 @@
 {
 	"cap_iface":"Ethernet Connection",
-	"udp_port":12345,
-
-	"src_host":"192.168.1.100",
-	"dst_host":[
-		"192.168.1.220",
-		"192.168.1.221",
-		"192.168.1.222"]
+	"frame":"IB",
+	"udp_port":12345
 }
