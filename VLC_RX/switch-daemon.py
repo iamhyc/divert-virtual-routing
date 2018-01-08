@@ -15,11 +15,23 @@ def updateThread():
 	while True:
 		time.sleep(1.0)
 		try:
-			# update map here #
+			tmp = load_json('./subnet.json')
+			subnet_map = tmp #atom
 			pass
 		except Exception as e:
 			pass
 		pass
+	pass
+
+def proxy_map(addr, reverse=0):
+	global subnet_map
+	tmp = subnet_map #atom
+	if reverse:
+		remap = tmp.keys()[tmp.values().index()]
+		return remap
+	else:
+		remap = tmp.values()[tmp.keys().index()]
+		return remap
 	pass
 
 def runThreadUL():
@@ -27,7 +39,7 @@ def runThreadUL():
 	printh("UL-Thread", "Now on %s"%(iface_ul), "green")
 	while True:
 		packet = wul.recv(bufsize=1500)
-		# remap IPAddr here #
+		packet.dst_addr = proxy_map(packet.dst_addr, 0)
 		wul.send(packet, recalculate_checksum=True)
 		pass
 	pass
@@ -38,7 +50,7 @@ def runThreadDL(pkt_q):
 	while True:
 		if not pkt_q.empty():
 			packet = pkt_q.get()
-			# remap IPAddr here #
+			packet.dst_addr = proxy_map(packet.dst_addr, 1)
 			wdl.send(packet)
 			remains = pkt_q.qsize()
 			print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
@@ -61,7 +73,6 @@ def main():
 				pydivert.Direction(1) #0 for OUT_BOUND
 				#1 for INBOUND to perform loopback (P.S. insert after inception)
 			)
-			##packet manipulation
 			#packet.dst_port = 11112 #for test
 			pkt_q.put(packet)
 		except Exception as e:
@@ -70,13 +81,16 @@ def main():
 	pass
 
 def init():
-	global count, skt, length, pkt_q, iface_ul, iface_dl, wdl, wul
+	global count, skt, length, pkt_q, subnet_map
+	global wdl, wul, iface_ul, iface_dl,
 	count = 0
 	length = 0
+	subnet_map = {}
 
 	config = load_json('./config.json')
 	iface_ul = config["iface_ul"]
 	iface_dl = config["iface_dl"]
+
 	##WinDivert Setup
 	flt_dl = ("%s and IfIdx==%d and SubIfIdx==%d"
 				%("inbound", iface_dl))
@@ -86,11 +100,13 @@ def init():
 				%("outbound", iface_ul, config["exFilter"]))
 	wul = pydivert.WinDivert(flt_ul)
 	wul.open() ##closer to `protocol`
+
 	##Socket Setup
 	skt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	skt.bind(('', 12345))
 	skt.setblocking(False)
 	pkt_q = Queue.Queue()
+
 	##Threading init
 	runHandleUL = threading.Thread(target=runThreadUL)
 	runHandleUL.setDaemon(True)
@@ -98,6 +114,9 @@ def init():
 	runHandleDL = threading.Thread(target=runThreadDL, args=(pkt_q, ))
 	runHandleDL.setDaemon(True)
 	runHandleDL.start()
+	updateHandle = threading.Thread(target=updateThread)
+	updateHandle.setDaemon(True)
+	updateHandle.start()
 	pass
 
 if __name__ == '__main__':
