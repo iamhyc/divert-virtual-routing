@@ -4,7 +4,7 @@ Utility: useful general function utilities
 @author: Mark Hong
 @level: debug
 '''
-import json, threading, greenlet, ifaddr
+import json, time, threading, greenlet, ifaddr
 from termcolor import colored, cprint
 
 def load_json(uri):
@@ -49,13 +49,14 @@ def get_ipAddr(target):
 #next rewrite with greenlet, factory and collection
 def exec_watch(process, hook=None, fatal=False, gen=True):
 	if gen:#external loop
+		process.setDaemon(True)
 		process.start()
 		t = threading.Thread(target=exec_watch, args=(process, hook, fatal, False))
 		t.setDaemon(True)
 		t.start()
 		pass
 	else:#internal loop
-		while process.is_alive(): pass
+		while process.is_alive(): time.sleep(1.0)#pass
 		if fatal and hook: hook()
 		pass
 	pass

@@ -47,10 +47,10 @@ def runThread(pkt_q):
 			packet = pkt_q.get()
 			udp_packet = str(bytearray(packet.raw))
 			#udp_packet = packet_wrapper(packet) #for future use
-			skt.sendto(udp_packet, ('localhost', udp_port))
+			skt.sendto(udp_packet, ('localhost', 12345))
 
 			count += 1
-			length += len(packet)
+			length += len(udp_packet)
 			remains = pkt_q.qsize()
 			print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
 			pass
@@ -96,9 +96,9 @@ def init():
 	runHandle = threading.Thread(target=runThread, args=(pkt_q, ))
 	runHandle.setDaemon(True)
 	runHandle.start()
-	updateHandle = threading.Thread(target=updateThread)
-	updateHandle.setDaemon(True)
-	updateHandle.start()
+	# updateHandle = threading.Thread(target=updateThread)
+	# updateHandle.setDaemon(True)
+	# updateHandle.start()
 	pass
 
 if __name__ == '__main__':
