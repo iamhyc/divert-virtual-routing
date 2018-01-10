@@ -5,28 +5,17 @@ Sniff and UDP.py
 @level: debug
 '''
 import socket, time, Queue, threading
+from TxRegisterDaemon import TxRegisterDaemon
 from Utility import *
 import pydivert
 
 global w, iface_t, subnet_map
 DBG = 1
 
-def updateThread():
-	global subnet_map
-	while True:
-		time.sleep(1.0)
-		try:
-			tmp = load_json('./subnet-mapping.json')
-			config = tmp #atom
-		except Exception as e:
-			pass
-		pass
-	pass
-
 def packet_wrapper(packet):
 	global subnet_map
 	ipAddr = packet.dst_addr
-	ipAddr_raw = socket.inte_aton(ipAddr)
+	ipAddr_raw = ip2int(ipAddr)
 	fraw = str(bytearray(packet.raw))
 	fid = ''
 
@@ -37,22 +26,28 @@ def packet_wrapper(packet):
 			break
 		pass
 
-	packet = struct_helper((ipAddr_raw, fid), fraw)
-	return packet
+	if fid:
+		packet = struct_helper((ipAddr_raw, fid), fraw)
+		if DBG: packet = fraw
+		return packet
+	else:
+		return ''
 
 def runThread(pkt_q):
 	global count, length
 	while True:
 		if not pkt_q.empty():
-			packet = pkt_q.get()
-			udp_packet = str(bytearray(packet.raw))
-			#udp_packet = packet_wrapper(packet) #for future use
-			skt.sendto(udp_packet, ('localhost', 12345))
+			p = pkt_q.get()
+			if DBG: print(p.src_addr, p.dst_addr, p.interface)
+			udp_packet = packet_wrapper(p) #for future use
+			if udp_packet:
+				skt.sendto(udp_packet, ('localhost', 12345))
 
-			count += 1
-			length += len(udp_packet)
-			remains = pkt_q.qsize()
-			print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
+				count += 1
+				length += len(udp_packet)
+				remains = pkt_q.qsize()
+				print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
+				pass
 			pass
 		pass
 	pass
@@ -73,32 +68,29 @@ def init():
 	global skt, count, length, pkt_q, flt_ctrl, iface_t, udp_port, subnet_map
 	count = 0
 	length = 0
+	subnet_map = {}
 
 	##init parameter from json
 	config = load_json('./config.json')
-	iface_t = get_iface(config['cap_iface'])
 	udp_port = config['udp_port']
+	iface_t = get_iface(config['cap_iface'])
+	ipAddr = get_ipAddr(config['cap_iface'])
 	struct_helper = StructHelper(config["frame"]) #'IB'=IPAddr+RxID
 
-	subnet_map = {}
-	iface_ctrl = "inbound and ifIdx==%d and subIfIdx==%d"%(iface_t)
-	test_ctrl = "not tcp.DstPort==11112"
+	flt_ctrl = "inbound and ifIdx==%d and not ip.DstAddr==%s"%(iface_t[0], ipAddr)
+	if DBG: print(flt_ctrl)
 
-	if DBG:
-		flt_ctrl = '%s and %s'%(iface_ctrl, test_ctrl)
-		print(flt_ctrl)
-	else:
-		flt_ctrl = '%s'%(iface_ctrl)
-		pass
 	##socket & thread init
 	skt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	pkt_q = Queue.Queue()
 	runHandle = threading.Thread(target=runThread, args=(pkt_q, ))
-	runHandle.setDaemon(True)
-	runHandle.start()
-	# updateHandle = threading.Thread(target=updateThread)
-	# updateHandle.setDaemon(True)
-	# updateHandle.start()
+	updateHandle = TxRegisterDaemon(subnet_map)
+	exec_watch(runHandle, fatal=True, hook=tx_exit)
+	exec_watch(updateHandle, fatal=False)
+	pass
+
+def tx_exit():
+	w.close()
 	pass
 
 if __name__ == '__main__':
@@ -108,5 +100,4 @@ if __name__ == '__main__':
 		main()
 	except Exception as e:
 		printh("CapMain", e, 'red') #for debug
-		w.close()
 		pass

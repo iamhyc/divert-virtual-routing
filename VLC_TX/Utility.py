@@ -24,6 +24,9 @@ def printh(tip, cmd, color=None, split=' '):
 		)
 	pass
 
+int2ip = lambda x: '.'.join([str(x/(256**i)%256) for i in xrange(3,-1,-1)])
+ip2int = lambda x:sum([256**j*int(i) for j,i in enumerate(x.split('.')[::-1])])
+
 def get_iface(target):
 	adapters = ifaddr.get_adapters()
 
@@ -34,6 +37,17 @@ def get_iface(target):
 			return iface_tuple
 		pass
 	return (0L, 0L)
+	pass
+
+def get_ipAddr(target):
+	adapters = ifaddr.get_adapters()
+
+	for adapter in adapters:
+		if target in adapter.nice_name:
+			ipAddr = adapter.ips[1].ip
+			return ipAddr
+		pass
+	return "0.0.0.0"
 	pass
 
 #next rewrite with greenlet, factory and collection
