@@ -9,8 +9,8 @@ from Utility import *
 from RxRegisterDaemon import RxRegisterDaemon
 import pydivert, ifaddr
 
-global w_block, w_sniff, w_ul, w_dl
-DBG = 1
+global w_sniff, w_ul, w_dl
+DBG = 0
 
 def proxy_func(addr, reverse=0):
 	global proxy_map
@@ -51,11 +51,12 @@ def runProxyThreadUL():
 	pass
 
 def runProxyThreadDL(data_q):
-	global count, length, iface_back, w_dl
+	global iface_back, w_dl
 	w_dl = pydivert.WinDivert('false')
 	w_dl.open()
 	printh("DL-Thread", "Now on %s"%(str(iface_back)), "green")
 
+	count, length = 0, 0
 	while True:
 		if not data_q.empty():
 			data = data_q.get()
@@ -73,7 +74,7 @@ def runProxyThreadDL(data_q):
 				print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
 				pass
 			else:
-				print('correspondance loss.')
+				if DBG: print('correspondance loss.')
 				pass
 			pass
 		pass
@@ -92,7 +93,7 @@ def sock_main():
 
 def init():
 	global config, proxy_map, sock, data_q, iface_back, iface_front, exFilter
-	global blockHandle, proxyHandleUL, proxyHandleDL
+	global proxyHandleUL, proxyHandleDL
 	proxy_map = {} #default empty proxy
 
 	config = load_json('./config.json')
@@ -114,7 +115,7 @@ def init():
 	pass
 
 def rx_exit():
-	join_helper((blockHandle, proxyHandleUL, proxyHandleDL))
+	join_helper((proxyHandleUL, proxyHandleDL))
 	w_sniff.close()
 	w_ul.close()
 	w_dl.close()

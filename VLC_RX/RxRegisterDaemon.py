@@ -45,7 +45,7 @@ class RxRegisterDaemon(threading.Thread):
 		while True:
 			ipAddr = get_ipAddr(self.iface)
 			if not (ipAddr in self.proxy_map.keys()):
-				status, mapIPAddr = self.request.split(' ')
+				status, mapIPAddr = self.request().split(' ')
 				if status=='0':
 					self.proxy_map[ipAddr] = mapIPAddr
 					pass
