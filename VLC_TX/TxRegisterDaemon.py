@@ -7,7 +7,7 @@ Client Register Daemon.py
 import socket, threading
 from Utility import ip2int, int2ip, load_json
 
-DBG = 1
+DBG = 0
 
 class TxRegisterDaemon(threading.Thread):
 	"""docstring for TxRegisterDaemon"""

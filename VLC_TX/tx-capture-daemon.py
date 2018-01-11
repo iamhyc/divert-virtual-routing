@@ -10,7 +10,7 @@ from Utility import *
 import pydivert
 
 global w, iface_t
-DBG = 1
+DBG = 0
 
 def packet_wrapper(packet):
 	global proxy_map
@@ -28,19 +28,21 @@ def packet_wrapper(packet):
 
 	if fid:
 		#packet = struct_helper((ipAddr_raw, fid), fraw)
-		packet = "%d %s %s"(ipAddr_raw, fid, fraw)
-		if DBG: packet = fraw
+		#packet = "%d %s %s"%(ipAddr_raw, fid, fraw)
+		packet = fraw
 		return packet
 	else:
 		return ''
 
 def runThread(pkt_q):
-	global w, count, length
+	global w
+	count, length = 0, 0
 	while True:
 		if not pkt_q.empty():
 			p = pkt_q.get()
 			udp_packet = packet_wrapper(p) #for future use
 			if udp_packet:
+				if DBG: skt.sendto(udp_packet, ('192.168.1.127', udp_port))
 				skt.sendto(udp_packet, ('localhost', udp_port))
 
 				count += 1
