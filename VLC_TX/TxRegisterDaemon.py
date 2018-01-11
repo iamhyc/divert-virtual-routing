@@ -11,9 +11,9 @@ DBG = 1
 
 class TxRegisterDaemon(threading.Thread):
 	"""docstring for TxRegisterDaemon"""
-	def __init__(self, subnet_map):
+	def __init__(self, proxy_map):
 		threading.Thread.__init__(self)
-		self.subnet_map = subnet_map
+		self.proxy_map = proxy_map
 		config = load_json('./config.json')
 		self.port_tx = config['reg_port_tx']
 		self.port_rx = config['reg_port_rx']
@@ -36,20 +36,20 @@ class TxRegisterDaemon(threading.Thread):
 		pass
 
 	def allocation(self, fid):
-		if not self.subnet_map.has_key(fid):
-			self.subnet_map[fid] = dict({'subnet':[]})
+		if not self.proxy_map.has_key(fid):
+			self.proxy_map[fid] = list()
 		mapIPIdx = self.ip_map.values().index(0) #find unused IP
 		mapIPAddr = self.ip_map.keys()[mapIPIdx]
 		self.ip_map[mapIPAddr] = 1 #occupied
 		mapIPAddr = int2ip(mapIPAddr)
-		self.subnet_map[fid]['subnet'].append(mapIPAddr) #occupied
+		self.proxy_map[fid].append(mapIPAddr) #occupied
 		return '0 %s'%(mapIPAddr)
 
 	def release(self, ipAddr):
-		for k,v in self.subnet_map.items():
-			if ipAddr in v['subnet']:
+		for k,v in self.proxy_map.items():
+			if ipAddr in v:
 				self.ip_map[ipAddr] = 0
-				self.subnet_map[k]['subnet'].pop(ipAddr)
+				self.proxy_map[k].pop(ipAddr)
 				return '0 %s'%(ipAddr)
 			pass
 		raise Exception('hehe') #exception		

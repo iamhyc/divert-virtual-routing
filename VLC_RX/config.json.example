@@ -7,6 +7,6 @@
 	"iface_back":"Wireless LAN",
 	"exFilter":"false",
 
-	"iface_front":"USB",
+	"iface_front":"WiFi Direct",
 	"udp_port":12345	
 }
