@@ -10,7 +10,7 @@ from RxRegisterDaemon import RxRegisterDaemon
 import pydivert, ifaddr
 
 global w_sniff, w_ul, w_dl
-DBG = 0
+DBG = 1
 
 def proxy_func(addr, reverse=0):
 	global proxy_map
@@ -27,11 +27,10 @@ def proxy_func(addr, reverse=0):
 	pass
 
 def runProxyThreadUL():
-	global w_ul, w_sniff, config, exFilter, iface_back
+	global w_sniff, w_ul, config, exFilter, iface_back
 	
-	sniff_flt = "not ip.DstAddr==%s and not %s"%(config["reg_server"], exFilter)
-	w_sniff = pydivert.WinDivert(sniff_flt, priority=-1000,
-		layer=pydivert.Layer(1))
+	sniff_flt = "ifIdx==17 and not ip.SrcAddr==127.0.0.1"
+	w_sniff = pydivert.WinDivert(sniff_flt, layer=pydivert.Layer(1))
 	w_sniff.open()
 	w_ul = pydivert.WinDivert("false")
 	w_ul.open()
@@ -42,10 +41,13 @@ def runProxyThreadUL():
 		tmp = proxy_func(p.src_addr, 0)
 		if tmp:
 			p.src_addr = tmp
-			p.interface = iface_back
+			p.interface = (13L, 0L)
 			p.direction = pydivert.Direction(0) #0 for OUT_BOUND
 			w_ul.send(p, recalculate_checksum=True)
 			if DBG: print(p.src_addr, p.dst_addr) #for debug
+			pass
+		else:
+			w_sniff.send(p)
 			pass
 		pass
 	pass
@@ -61,8 +63,8 @@ def runProxyThreadDL(data_q):
 		if not data_q.empty():
 			data = data_q.get()
 			v = memoryview(bytearray(data))
-			p = pydivert.Packet(v, iface_back,
-					pydivert.Direction(1) #1 for IN_BOUND
+			p = pydivert.Packet(v, (17L, 0L),
+					pydivert.Direction(0) #0 for OUT_BOUND
 					)
 			tmp = proxy_func(p.dst_addr, 1)
 			if tmp:
@@ -117,7 +119,6 @@ def init():
 def rx_exit():
 	join_helper((proxyHandleUL, proxyHandleDL))
 	w_sniff.close()
-	w_ul.close()
 	w_dl.close()
 	pass
 

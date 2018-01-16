@@ -10,7 +10,7 @@ from Utility import *
 import pydivert
 
 global w, iface_t
-DBG = 0
+DBG = 1
 
 def packet_wrapper(packet):
 	global proxy_map
@@ -42,7 +42,6 @@ def runThread(pkt_q):
 			p = pkt_q.get()
 			udp_packet = packet_wrapper(p) #for future use
 			if udp_packet:
-				if DBG: skt.sendto(udp_packet, ('192.168.1.127', udp_port))
 				skt.sendto(udp_packet, ('localhost', udp_port))
 
 				count += 1
@@ -80,6 +79,7 @@ def init():
 	struct_helper = StructHelper(config["frame"]) #'IB'=IPAddr+RxID
 
 	flt_ctrl = "inbound and ifIdx==%d and not ip.DstAddr==%s"%(iface_t[0], ipAddr)
+	flt_ctrl = "inbound and ifIdx==%d"%(iface_t[0])
 	if DBG: print(flt_ctrl)
 
 	##socket & thread init

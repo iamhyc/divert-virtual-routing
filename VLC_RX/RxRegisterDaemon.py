@@ -43,7 +43,7 @@ class RxRegisterDaemon(threading.Thread):
 
 	def run(self):
 		while True:
-			ipAddr = get_ipAddr(self.iface)
+			ipAddr = "192.168.137.44"#get_ipAddr(self.iface)
 			if not (ipAddr in self.proxy_map.keys()):
 				status, mapIPAddr = self.request().split(' ')
 				if status=='0':
