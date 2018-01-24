@@ -10,7 +10,7 @@ from Utility import *
 import pydivert
 
 global w, iface_t
-DBG = 1
+DBG = 0
 
 def packet_wrapper(packet):
 	global proxy_map
@@ -40,14 +40,14 @@ def runThread(pkt_q):
 	while True:
 		if not pkt_q.empty():
 			p = pkt_q.get()
-			udp_packet = packet_wrapper(p) #for future use
+			udp_packet = packet_wrapper(p)
 			if udp_packet:
 				skt.sendto(udp_packet, ('localhost', udp_port))
 
 				count += 1
 				length += len(udp_packet)
 				remains = pkt_q.qsize()
-				#if DBG: print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
+				if DBG: print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
 				pass
 			else:
 				w.send(p) #send back others

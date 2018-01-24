@@ -1,12 +1,12 @@
 {
 	"reg_id":"id-0",
-	"reg_server":"192.168.1.100",
+	"reg_server":"192.168.1.2",
 	"reg_port_tx":11112,
 	"reg_port_rx":11113,
 
-	"iface_back":"Wireless LAN",
+	"iface_back":"Realtek RTL8188EU Wireless LAN 802.11n USB 2.0 Network Adapter #2",
 	"exFilter":"false",
 
-	"iface_front":"WiFi Direct",
-	"udp_port":12345	
+	"iface_front":"Microsoft Virtual WiFi Miniport Adapter",
+	"udp_port":12306	
 }

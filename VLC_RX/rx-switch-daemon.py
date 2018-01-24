@@ -10,7 +10,7 @@ from RxRegisterDaemon import RxRegisterDaemon
 import pydivert, ifaddr
 
 global w_ul, w_dl
-DBG = 1
+DBG = 0
 
 def proxy_func(addr, reverse=0):
 	global proxy_map
@@ -26,17 +26,25 @@ def proxy_func(addr, reverse=0):
 		return ""
 	pass
 
+def runBlockThread():
+	global proxy_map, w_block
+	block_flt = "outbound and ifIdx==%s and not ip.DstAddr==%s"%(iface_back, config['reg_server'])
+	##"outbound and ifIdx==22 and not ip.SrcAddr==192.168.1.220 and not ip.DstAddr==192.168.1.2"
+	w_block = pydivert.WinDivert(block_flt, priority=-1000)
+	w_block.open()
+	while True:
+		p = w_block.recv()
+		if p.src_addr in proxy_map.values():#modified packet
+			w_block.send(p)
+		else:
+			pass#block out
+		pass
+	pass
+
 def runProxyThreadUL():
 	global w_ul, config, exFilter, iface_back
 	
-	# sniff_flt = "ifIdx==22 and not ip.DstAddr==%s"%(config["reg_server"])
 	sniff_flt = "ip and not ip.SrcAddr==127.0.0.1"
-	# w_block = pydivert.WinDivert("outbound and ifIdx==22 and tcp and not ip.SrcAddr==192.168.1.220", 
-	# 	priority=-1000, flags=pydivert.Flag.DROP)
-	w_block = pydivert.WinDivert("outbound and ifIdx==22 and not ip.SrcAddr==192.168.1.220 and not ip.DstAddr==192.168.1.2", 
-	 	priority=-1000, flags=pydivert.Flag.DROP)
-	w_block.open()
-
 	w_ul = pydivert.WinDivert(sniff_flt, priority=-900,
 		layer=pydivert.Layer(1))
 	w_ul.open()
@@ -50,7 +58,6 @@ def runProxyThreadUL():
 			# p.interface = iface_back
 			# p.direction = pydivert.Direction(0) #0 for OUT_BOUND
 			w_ul.send(p, recalculate_checksum=True)
-			#if DBG: print(p.src_addr, p.dst_addr) #for debug
 			pass
 		pass
 	pass
@@ -81,7 +88,7 @@ def runProxyThreadDL(data_q):
 				length += len(data)
 				count += 1
 				remains = data_q.qsize()
-				#if DBG: print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
+				if DBG: print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
 				pass
 			else:
 				if DBG: print('correspondance loss.')
@@ -116,9 +123,11 @@ def init():
 	sock.setblocking(False)
 
 	data_q = Queue.Queue()
+	runBlockHandle = threading.Thread(target=runBlockThread)
 	proxyHandleUL = threading.Thread(target=runProxyThreadUL)
 	proxyHandleDL = threading.Thread(target=runProxyThreadDL, args=(data_q, ))
 	updateHandle = RxRegisterDaemon(proxy_map)
+	exec_watch(runBlockHandle, fatal=False)
 	exec_watch(proxyHandleUL, fatal=True, hook=rx_exit)
 	exec_watch(proxyHandleDL, fatal=True, hook=rx_exit)
 	exec_watch(updateHandle, fatal=False)
@@ -126,6 +135,7 @@ def init():
 
 def rx_exit():
 	join_helper((proxyHandleUL, proxyHandleDL))
+	w_block.close()
 	w_ul.close()
 	w_dl.close()
 	pass

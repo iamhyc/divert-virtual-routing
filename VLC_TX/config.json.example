@@ -1,7 +1,7 @@
 {
-	"cap_iface":"Ethernet Connection",
+	"cap_iface":"Gigabit Network",
 	"frame":"IB",
-	"udp_port":12345,
+	"udp_port":10086,
 
 	"reg_port_tx":11112,
 	"reg_port_rx":11113,
