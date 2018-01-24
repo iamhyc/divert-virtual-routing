@@ -9,8 +9,8 @@ from Utility import *
 from RxRegisterDaemon import RxRegisterDaemon
 import pydivert, ifaddr
 
-global w_sniff, w_ul, w_dl
-DBG = 0
+global w_ul, w_dl
+DBG = 1
 
 def proxy_func(addr, reverse=0):
 	global proxy_map
@@ -27,32 +27,37 @@ def proxy_func(addr, reverse=0):
 	pass
 
 def runProxyThreadUL():
-	global w_ul, w_sniff, config, exFilter, iface_back
+	global w_ul, config, exFilter, iface_back
 	
-	sniff_flt = "not ip.DstAddr==%s and not %s"%(config["reg_server"], exFilter)
-	w_sniff = pydivert.WinDivert(sniff_flt, priority=-1000,
+	# sniff_flt = "ifIdx==22 and not ip.DstAddr==%s"%(config["reg_server"])
+	sniff_flt = "ip and not ip.SrcAddr==127.0.0.1"
+	# w_block = pydivert.WinDivert("outbound and ifIdx==22 and tcp and not ip.SrcAddr==192.168.1.220", 
+	# 	priority=-1000, flags=pydivert.Flag.DROP)
+	w_block = pydivert.WinDivert("outbound and ifIdx==22 and not ip.SrcAddr==192.168.1.220 and not ip.DstAddr==192.168.1.2", 
+	 	priority=-1000, flags=pydivert.Flag.DROP)
+	w_block.open()
+
+	w_ul = pydivert.WinDivert(sniff_flt, priority=-900,
 		layer=pydivert.Layer(1))
-	w_sniff.open()
-	w_ul = pydivert.WinDivert("false")
 	w_ul.open()
 	printh("UL-Thread", "Now on %s"%(str(iface_back)), "green")
 
 	while True:
-		p = w_sniff.recv()
+		p = w_ul.recv()
 		tmp = proxy_func(p.src_addr, 0)
 		if tmp:
 			p.src_addr = tmp
-			p.interface = iface_back
-			p.direction = pydivert.Direction(0) #0 for OUT_BOUND
+			# p.interface = iface_back
+			# p.direction = pydivert.Direction(0) #0 for OUT_BOUND
 			w_ul.send(p, recalculate_checksum=True)
-			if DBG: print(p.src_addr, p.dst_addr) #for debug
+			#if DBG: print(p.src_addr, p.dst_addr) #for debug
 			pass
 		pass
 	pass
 
 def runProxyThreadDL(data_q):
 	global iface_back, w_dl
-	w_dl = pydivert.WinDivert('false')
+	w_dl = pydivert.WinDivert('false', layer=pydivert.Layer(1))
 	w_dl.open()
 	printh("DL-Thread", "Now on %s"%(str(iface_back)), "green")
 
@@ -61,17 +66,22 @@ def runProxyThreadDL(data_q):
 		if not data_q.empty():
 			data = data_q.get()
 			v = memoryview(bytearray(data))
-			p = pydivert.Packet(v, iface_back,
-					pydivert.Direction(1) #1 for IN_BOUND
+			p = pydivert.Packet(v, (17L,0L),
+					pydivert.Direction(0) #0 for OUT_BOUND
 					)
 			tmp = proxy_func(p.dst_addr, 1)
 			if tmp:
 				p.dst_addr = tmp
-				w_dl.send(p, recalculate_checksum=True)
+				try:
+					w_dl.send(p, recalculate_checksum=True)
+				except Exception as e:
+					printh("Debug", e, 'red')
+					pass
+
 				length += len(data)
 				count += 1
 				remains = data_q.qsize()
-				print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
+				#if DBG: print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
 				pass
 			else:
 				if DBG: print('correspondance loss.')
@@ -116,7 +126,6 @@ def init():
 
 def rx_exit():
 	join_helper((proxyHandleUL, proxyHandleDL))
-	w_sniff.close()
 	w_ul.close()
 	w_dl.close()
 	pass

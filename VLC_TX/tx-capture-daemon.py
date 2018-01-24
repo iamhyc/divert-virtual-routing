@@ -10,7 +10,7 @@ from Utility import *
 import pydivert
 
 global w, iface_t
-DBG = 0
+DBG = 1
 
 def packet_wrapper(packet):
 	global proxy_map
@@ -42,13 +42,12 @@ def runThread(pkt_q):
 			p = pkt_q.get()
 			udp_packet = packet_wrapper(p) #for future use
 			if udp_packet:
-				if DBG: skt.sendto(udp_packet, ('192.168.1.127', udp_port))
 				skt.sendto(udp_packet, ('localhost', udp_port))
 
 				count += 1
 				length += len(udp_packet)
 				remains = pkt_q.qsize()
-				print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
+				#if DBG: print("%d\t%d\t%.2f MB"%(count, remains, length/1E6))
 				pass
 			else:
 				w.send(p) #send back others
@@ -59,6 +58,9 @@ def runThread(pkt_q):
 
 def main():
 	global flt_ctrl, w
+
+	flt_ctrl = "inbound and ifIdx==%d and ip"%(iface_t[0])
+	if DBG: print(flt_ctrl)
 	w = pydivert.WinDivert(flt_ctrl)
 	w.open()
 	while True:
@@ -78,9 +80,6 @@ def init():
 	iface_t = get_iface(config['cap_iface'])
 	ipAddr = get_ipAddr(config['cap_iface'])
 	struct_helper = StructHelper(config["frame"]) #'IB'=IPAddr+RxID
-
-	flt_ctrl = "inbound and ifIdx==%d and not ip.DstAddr==%s"%(iface_t[0], ipAddr)
-	if DBG: print(flt_ctrl)
 
 	##socket & thread init
 	skt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
