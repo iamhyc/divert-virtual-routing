@@ -1,2 +1,7 @@
-config.json
-*.pyc
+.vs
+obj*
+release
+*.sln
+*.vcxproj
+*.log
+*.wrn

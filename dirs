@@ -1,0 +1,5 @@
+DIRS= \
+     dll \
+     sys \
+     project \
+     test
