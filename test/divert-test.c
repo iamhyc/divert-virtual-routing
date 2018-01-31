@@ -1,6 +1,6 @@
 /*
  * passthru.c
- * (C) 2018, all rights reserved,
+ * (C) 2016, all rights reserved,
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -57,17 +57,17 @@ int __cdecl main(int argc, char **argv)
     }
 
     // Start the threads
-    //for (i = 1; i < num_threads; i++)
-    //{
-    //    thread = CreateThread(NULL, 1, (LPTHREAD_START_ROUTINE)passthru,
-    //        (LPVOID)handle, 0, NULL);
-    //    if (thread == NULL)
-    //    {
-    //        fprintf(stderr, "error: failed to start passthru thread (%u)\n",
-    //            GetLastError());
-    //        exit(EXIT_FAILURE);
-    //    }
-    //}
+    /*for (i = 1; i < num_threads; i++)
+    {
+        thread = CreateThread(NULL, 1, (LPTHREAD_START_ROUTINE)passthru,
+            (LPVOID)handle, 0, NULL);
+        if (thread == NULL)
+        {
+            fprintf(stderr, "error: failed to start passthru thread (%u)\n",
+                GetLastError());
+            exit(EXIT_FAILURE);
+        }
+    }*/
 
     // Main thread:
     passthru((LPVOID)handle);
@@ -79,8 +79,8 @@ int __cdecl main(int argc, char **argv)
 static DWORD passthru(LPVOID arg)
 {
     unsigned char packet[MAXBUF];
-    UINT packet_len, counter = 0;
-    WINDIVERT_ADDRESS addr;
+    UINT packet_len;
+	int counter = 0;
 
 	PWINDIVERT_IPHDR ip_header;
 	PWINDIVERT_IPV6HDR ipv6_header;
@@ -89,6 +89,7 @@ static DWORD passthru(LPVOID arg)
 	PWINDIVERT_TCPHDR tcp_header;
 	PWINDIVERT_UDPHDR udp_header;
 
+    WINDIVERT_ADDRESS addr;
     HANDLE handle = (HANDLE)arg;
 
     // Main loop:
@@ -101,22 +102,25 @@ static DWORD passthru(LPVOID arg)
                 GetLastError());
             continue;
         }
-		else {
-			fprintf(stdout, "Running.\n");
-			WinDivertHelperParsePacket(packet, packet_len, &ip_header, &ipv6_header, &icmp_header, &icmpv6_header, &tcp_header, &udp_header, NULL, NULL);
-			fprintf(stdout, "SYN:%u ACK:%u FIN:%u\n", tcp_header->Syn, tcp_header->Ack, tcp_header->Fin);
+		else
+		{
+			counter++;
+			WinDivertHelperParsePacket(packet, packet_len, &ip_header,
+				&ipv6_header, &icmp_header, &icmpv6_header, &tcp_header,
+				&udp_header, NULL, NULL);
+			fprintf(stdout, "[TCP-%d] SYN:%u ACK:%u FIN:%u\n", counter, tcp_header->Syn, tcp_header->Ack, tcp_header->Fin);
+			//fprintf(stdout, "%d found.\n", counter);
 		}
 
         // Re-inject the matching packet.
         if (!WinDivertSend(handle, packet, packet_len, &addr, NULL))
         {
-			
             fprintf(stderr, "warning: failed to reinject packet (%d)\n",
                 GetLastError());
         }
-		else {
-			counter++;
-			fprintf(stdout, "%d Sent.", counter);
+		else
+		{
+			//fprintf(stdout, "%d sent.\n", counter);
 		}
     }
 }

@@ -29,7 +29,7 @@
 #include "windivert.h"
 
 #define WINDIVERT_VERSION                           1
-#define WINDIVERT_VERSION_MINOR                     4
+#define WINDIVERT_VERSION_MINOR                     3
 
 #define WINDIVERT_STR2(s)                           #s
 #define WINDIVERT_STR(s)                            WINDIVERT_STR2(s)
@@ -43,8 +43,8 @@
 #define WINDIVERT_DEVICE_NAME                                               \
     L"WinDivert" WINDIVERT_VERSION_LSTR
 
-#define WINDIVERT_IOCTL_VERSION                     6
-#define WINDIVERT_IOCTL_MAGIC                       0xA2BF
+#define WINDIVERT_IOCTL_VERSION                     5
+#define WINDIVERT_IOCTL_MAGIC                       0x1E06
 
 #define WINDIVERT_FILTER_FIELD_ZERO                 0
 #define WINDIVERT_FILTER_FIELD_INBOUND              1
@@ -104,10 +104,8 @@
 #define WINDIVERT_FILTER_FIELD_UDP_LENGTH           55
 #define WINDIVERT_FILTER_FIELD_UDP_CHECKSUM         56
 #define WINDIVERT_FILTER_FIELD_UDP_PAYLOADLENGTH    57
-#define WINDIVERT_FILTER_FIELD_LOOPBACK             58
-#define WINDIVERT_FILTER_FIELD_IMPOSTOR             59
 #define WINDIVERT_FILTER_FIELD_MAX                  \
-    WINDIVERT_FILTER_FIELD_IMPOSTOR
+    WINDIVERT_FILTER_FIELD_UDP_PAYLOADLENGTH
 
 #define WINDIVERT_FILTER_TEST_EQ                    0
 #define WINDIVERT_FILTER_TEST_NEQ                   1
@@ -133,7 +131,7 @@
  * WinDivert flags.
  */
 #define WINDIVERT_FLAGS_ALL                                                 \
-    (WINDIVERT_FLAG_SNIFF | WINDIVERT_FLAG_DROP | WINDIVERT_FLAG_DEBUG)
+    (WINDIVERT_FLAG_SNIFF | WINDIVERT_FLAG_DROP)
 #define WINDIVERT_FLAGS_EXCLUDE(flags, flag1, flag2)                        \
     (((flags) & ((flag1) | (flag2))) != ((flag1) | (flag2)))
 #define WINDIVERT_FLAGS_VALID(flags)                                        \
@@ -153,15 +151,12 @@
 /*
  * WinDivert parameters.
  */
-#define WINDIVERT_PARAM_QUEUE_LEN_DEFAULT           2048
-#define WINDIVERT_PARAM_QUEUE_LEN_MIN               16
-#define WINDIVERT_PARAM_QUEUE_LEN_MAX               16384
-#define WINDIVERT_PARAM_QUEUE_TIME_DEFAULT          1000        // 1s
-#define WINDIVERT_PARAM_QUEUE_TIME_MIN              20          // 20ms
-#define WINDIVERT_PARAM_QUEUE_TIME_MAX              8000        // 8s
-#define WINDIVERT_PARAM_QUEUE_SIZE_MIN              65535       // 64KB
-#define WINDIVERT_PARAM_QUEUE_SIZE_MAX              33554432    // 32MB
-#define WINDIVERT_PARAM_QUEUE_SIZE_DEFAULT          4194304     // 4MB
+#define WINDIVERT_PARAM_QUEUE_LEN_DEFAULT           1024
+#define WINDIVERT_PARAM_QUEUE_LEN_MIN               1
+#define WINDIVERT_PARAM_QUEUE_LEN_MAX               8192
+#define WINDIVERT_PARAM_QUEUE_TIME_DEFAULT          512
+#define WINDIVERT_PARAM_QUEUE_TIME_MIN              128
+#define WINDIVERT_PARAM_QUEUE_TIME_MAX              2048
 
 /*
  * WinDivert message definitions.

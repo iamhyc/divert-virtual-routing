@@ -1,5 +1,3 @@
 DIRS= \
-     dll \
-     sys \
-     project \
-     test
+     test \
+     project

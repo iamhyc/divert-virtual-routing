@@ -1,7 +1,9 @@
 .vs
 obj*
 release
+Debug
 *.sln
 *.vcxproj
+*.err
 *.log
 *.wrn
